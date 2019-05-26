@@ -6,6 +6,8 @@ import time
 
 SendInput = ctypes.windll.user32.SendInput
 
+# Common scan codes to use later.
+# Full list of scan codes: http://www.gamespp.com/directx/directInputKeyboardScanCodes.html
 W = 0x11
 A = 0x1E
 S = 0x1F
