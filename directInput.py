@@ -1,4 +1,4 @@
-# These direct inputs simulate keypresses using ScanCodes.
+# Class which defines direct inputs to simulate keypresses using ScanCodes.
 # See http://stackoverflow.com/questions/14489013/simulate-python-keypresses-for-controlling-a-game
 
 import ctypes
