@@ -4,15 +4,46 @@ import mss
 import numpy as np
 from directInput import PressKey, ReleaseKey, W, A, S, D
 
+# Define part of the screen to capture
+# GTA V resolution must be 1024x768 and placed at top left of screen.
+HEIGHT = 768
+WIDTH = 1024
+monitor = {'top': 40, 'left': 0, 'width': WIDTH, 'height': HEIGHT}
+
+# Define a gap so that lines corresponding to window edges aren't detected.
+window_gap = 10
+
+# Defined as [X,Y] points, rather than [Y,X] as usual with images.
+lane_roi_vertices = np.array([[window_gap, HEIGHT-window_gap], [window_gap, HEIGHT*2/3], [WIDTH*1/3, HEIGHT*1/3],
+                              [WIDTH*2/3, HEIGHT*1/3], [WIDTH-window_gap, HEIGHT*2/3],
+                              [WIDTH-window_gap, HEIGHT-window_gap]], np.int32)
+
+# Blackens out the entire image with the exception of the region of interest specified by polygon vertices.
+def img_roi(img, vertices):
+    # Matrix of zeros with same size as image.
+    mask = np.zeros_like(img)
+
+    # Fill in the region of interest with white (full color).
+    cv2.fillPoly(mask, vertices, [255, 255, 255])
+
+    # Now bitwise AND the image with the given region of interest. Since the mask is white then
+    # colors are preserved.
+    masked_img = cv2.bitwise_and(img, mask)
+
+    return masked_img
+
 def process_img(original_img):
     # Convert image to grayscale.
     gray_img = cv2.cvtColor(original_img, cv2.COLOR_RGB2GRAY)
 
     # Get edges for easier line detection.
-    edge_img = cv2.Canny(gray_img, 100, 200)
+    edge_img = cv2.Canny(gray_img, 100, 150)
+
+    # Keep edges only in region of interest (likely to correspond to lanes).
+    lane_edges = img_roi(edge_img, [lane_roi_vertices])
 
     # Detect lines.
-    lines = cv2.HoughLinesP(image=edge_img,
+    lines = cv2.HoughLinesP(image=lane_edges,
                             rho=1, # Resolution
                             theta=np.pi/180, # Resolution
                             threshold=200,
@@ -24,9 +55,10 @@ def process_img(original_img):
 
 # Draws the lines parametrized by two points in the given image.
 def draw_lines_in_img(image, lines):
-    for line in lines:
-        coords = line[0]
-        cv2.line(image, (coords[0], coords[1]), (coords[2], coords[3]), [0, 255, 0], 3)
+    if lines is not None:
+        for line in lines:
+            coords = line[0] # Line format: [[x1,y1,x2,y2]]
+            cv2.line(image, (coords[0], coords[1]), (coords[2], coords[3]), [0, 255, 0], 4)
 
 # Counts down starting from a given time.
 def countdown(timer):
@@ -36,10 +68,6 @@ def countdown(timer):
 
 def main():
     with mss.mss() as sct:
-        # Define part of the screen to capture
-        # GTA V resolution must be 1024x768 and placed at top left of screen.
-        monitor = {'top': 40, 'left': 0, 'width': 1024, 'height': 768}
-
         # Count down to give user time to prepare game window.
         countdown(2)
 
