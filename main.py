@@ -39,32 +39,40 @@ def draw_lines_in_img(image, lines):
             coords = line[0] # Line format: [[x1,y1,x2,y2]]
             cv2.line(image, (coords[0], coords[1]), (coords[2], coords[3]), [0, 255, 0], 4)
 
+# Given lines parametrized by two points, calculates the pair most likely to correspond to a lane.
+def get_best_lane(lines):
+    pass
+
+def process_img(img):
+    # Convert image to grayscale.
+    gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
+    # Get edges for easier line detection.
+    edge_img = cv2.Canny(gray_img, 100, 150)
+
+    # Keep edges only in region of interest (likely to correspond to lanes). Gets rid of lines corresponding to
+    # electricity poles, mountains, the horizon, etc.
+    lane_edges = img_roi(edge_img, [lane_roi_vertices])
+
+    # Detect lines and draw them on the original image.
+    lines = cv2.HoughLinesP(image=lane_edges,
+                            rho=1, # Resolution
+                            theta=np.pi/180, # Resolution
+                            threshold=50,
+                            minLineLength=100,
+                            maxLineGap=15)
+    draw_lines_in_img(img, lines)
+
+    # Calculate which pair (if any) of lines is most likely to correspond to the lane.
+    # line_l, line_r = get_best_lane(lines)
+
+    return img
+
 # Counts down starting from a given time.
 def countdown(timer):
     for i in list(range(timer))[::-1]:
         print(i+1)
         time.sleep(1)
-
-def process_img(original_img):
-    # Convert image to grayscale.
-    gray_img = cv2.cvtColor(original_img, cv2.COLOR_RGB2GRAY)
-
-    # Get edges for easier line detection.
-    edge_img = cv2.Canny(gray_img, 150, 200)
-
-    # Keep edges only in region of interest (likely to correspond to lanes).
-    lane_edges = img_roi(edge_img, [lane_roi_vertices])
-
-    # Detect lines.
-    lines = cv2.HoughLinesP(image=lane_edges,
-                            rho=1, # Resolution
-                            theta=np.pi/180, # Resolution
-                            threshold=50,
-                            minLineLength=150,
-                            maxLineGap=10)
-    draw_lines_in_img(original_img, lines)
-
-    return original_img
 
 def main():
     with mss.mss() as sct:
