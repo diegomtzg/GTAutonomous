@@ -14,9 +14,9 @@ monitor = {'top': 40, 'left': 0, 'width': WIDTH, 'height': HEIGHT}
 window_gap = 10
 
 # Defined as [X,Y] points, rather than [Y,X] as usual with images.
-lane_roi_vertices = np.array([[window_gap, HEIGHT-window_gap], [window_gap, HEIGHT*2/3], [WIDTH*1/3, HEIGHT*1/3],
+lane_roi_vertices = np.array([[window_gap, HEIGHT-window_gap*4], [window_gap, HEIGHT*2/3], [WIDTH*1/3, HEIGHT*1/3],
                               [WIDTH*2/3, HEIGHT*1/3], [WIDTH-window_gap, HEIGHT*2/3],
-                              [WIDTH-window_gap, HEIGHT-window_gap]], np.int32)
+                              [WIDTH-window_gap, HEIGHT-window_gap*4]], np.int32)
 
 # Blackens out the entire image with the exception of the region of interest specified by polygon vertices.
 def img_roi(img, vertices):
@@ -32,27 +32,6 @@ def img_roi(img, vertices):
 
     return masked_img
 
-def process_img(original_img):
-    # Convert image to grayscale.
-    gray_img = cv2.cvtColor(original_img, cv2.COLOR_RGB2GRAY)
-
-    # Get edges for easier line detection.
-    edge_img = cv2.Canny(gray_img, 100, 150)
-
-    # Keep edges only in region of interest (likely to correspond to lanes).
-    lane_edges = img_roi(edge_img, [lane_roi_vertices])
-
-    # Detect lines.
-    lines = cv2.HoughLinesP(image=lane_edges,
-                            rho=1, # Resolution
-                            theta=np.pi/180, # Resolution
-                            threshold=200,
-                            minLineLength=30,
-                            maxLineGap=15)
-    draw_lines_in_img(original_img, lines)
-
-    return original_img
-
 # Draws the lines parametrized by two points in the given image.
 def draw_lines_in_img(image, lines):
     if lines is not None:
@@ -65,6 +44,27 @@ def countdown(timer):
     for i in list(range(timer))[::-1]:
         print(i+1)
         time.sleep(1)
+
+def process_img(original_img):
+    # Convert image to grayscale.
+    gray_img = cv2.cvtColor(original_img, cv2.COLOR_RGB2GRAY)
+
+    # Get edges for easier line detection.
+    edge_img = cv2.Canny(gray_img, 150, 200)
+
+    # Keep edges only in region of interest (likely to correspond to lanes).
+    lane_edges = img_roi(edge_img, [lane_roi_vertices])
+
+    # Detect lines.
+    lines = cv2.HoughLinesP(image=lane_edges,
+                            rho=1, # Resolution
+                            theta=np.pi/180, # Resolution
+                            threshold=50,
+                            minLineLength=150,
+                            maxLineGap=10)
+    draw_lines_in_img(original_img, lines)
+
+    return original_img
 
 def main():
     with mss.mss() as sct:
